@@ -1,0 +1,55 @@
+experiment:
+  name: "vlm-prelabeling-prompt-formulation"
+  seed: 42
+
+data:
+  coco_root: "data/coco"
+  annotations: "data/coco/annotations/instances_val2017.json"
+  images_dir: "data/coco/val2017"
+  sample_file: "data/sample/sample_500.json"
+  sample_size: 500
+  min_instances_per_class: 30
+
+classes:
+  - {id: 1,  en: "person",   pt: "pessoa",    article: "a"}
+  - {id: 18, en: "dog",      pt: "cachorro",  article: "o"}
+  - {id: 17, en: "cat",      pt: "gato",      article: "o"}
+  - {id: 3,  en: "car",      pt: "carro",     article: "o"}
+  - {id: 2,  en: "bicycle",  pt: "bicicleta", article: "a"}
+  - {id: 62, en: "chair",    pt: "cadeira",   article: "a"}
+  - {id: 44, en: "bottle",   pt: "garrafa",   article: "a"}
+  - {id: 47, en: "cup",      pt: "copo",      article: "o"}
+  - {id: 53, en: "apple",    pt: "maçã",      article: "a"}
+  - {id: 59, en: "pizza",    pt: "pizza",     article: "a"}
+
+prompts:
+  types: ["simple", "direct", "contextual", "object"]
+  languages: ["en"]          # EN only for primary experiment; use ["en","pt"] for Appendix A
+
+models:
+  grounding_dino:
+    weights: "weights/groundingdino_swinb_cogcoor.pth"
+    config: "GroundingDINO_SwinB_cfg.py"
+    box_threshold: 0.30
+    text_threshold: 0.25
+  sam2:
+    weights: "weights/sam2.1_hiera_large.pt"
+    model_cfg: "configs/sam2.1/sam2.1_hiera_l.yaml"
+
+matching:
+  algorithm: "hungarian"
+  iou_threshold: 0.10
+
+metrics:
+  utility_thresholds:
+    good: 0.75
+    correctable: 0.50
+  boundary_f1_tolerance: 2
+  conditional_analysis:
+    - 0.50
+    - 0.75
+
+output:
+  raw_dir: "results/raw"
+  tables_dir: "results/tables"
+  figures_dir: "results/figures"

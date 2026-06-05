@@ -1,0 +1,12 @@
+data/
+weights/
+results/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+notebooks/
+tests/
+*.md
+.dockerignore
