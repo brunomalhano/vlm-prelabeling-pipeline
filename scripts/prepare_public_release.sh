@@ -18,10 +18,6 @@ rsync -a --delete \
   --exclude "weights" \
   --exclude "results/raw" \
   --exclude "results/run-*" \
-  --exclude "sn-article-template/*.pdf" \
-  --exclude "sn-article-template/*.aux" \
-  --exclude "sn-article-template/*.log" \
-  --exclude "sn-article-template/*.out" \
   "${ROOT_DIR}/" "${OUT_DIR}/"
 
 cat <<EOF

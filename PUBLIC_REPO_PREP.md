@@ -46,4 +46,4 @@ git push -u origin main
 
 ## Manuscript update rule
 
-After publishing, set the `Declarations` URLs in `sn-article-template/sn-article-mva.tex` to this public repository URL (and Zenodo DOI if available).
+After publishing, set the paper `Declarations` URLs to this public repository URL (and Zenodo DOI if available).
