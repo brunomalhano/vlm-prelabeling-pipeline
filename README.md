@@ -1,159 +1,139 @@
 # VLM Pre-Labeling Pipeline
 
-Pipeline for evaluating PT/EN prompts for pre-labeling with Grounding DINO + SAM 2.1 on COCO val2017.
+Reproducible pipeline for evaluating prompt formulation effects in modular pre-labeling for instance segmentation using Grounding DINO + SAM 2.1 on COCO val2017.
 
-## Overview
+This repository is aligned with the final manuscript:
 
-This pipeline evaluates how language (English vs Portuguese) and prompt formulation affect the quality of Vision-Language Model (VLM) based pre-labeling for instance segmentation tasks.
+- **Prompt Formulation Effects in Modular Vision-Language Pre-labeling Pipelines for Instance Segmentation**
+- Authors: Bruno Malhano de Oliveira Jordao, Giovane Quadrelli
+- Public repo URL: https://github.com/brunomalhano/vlm-prelabeling-pipeline
 
-### Architecture
+## Scope
 
-```
-vlm-pipeline/
+The default configuration reproduces the **primary EN-only experiment** used in the paper:
+
+- 500 sampled COCO val2017 images
+- 10 target classes
+- 4 prompt formulations: `simple`, `direct`, `contextual`, `object`
+- Matching: Hungarian assignment per class per image
+- Models: Grounding DINO (Swin-B) + SAM 2.1 (Hiera-L)
+
+Portuguese (`pt`) can be enabled as an additional analysis mode by editing `configs/experiment.yaml` (`prompts.languages`).
+
+## Repository Structure
+
+```text
+.
 ├── configs/
-│   └── experiment.yaml          # Experiment configuration
+│   └── experiment.yaml
 ├── data/
-│   └── coco/
-│       ├── annotations/         # COCO val2017 annotations
-│       └── val2017/             # COCO val2017 images
+│   └── sample/
 ├── notebooks/
-│   ├── 01_data_exploration.py   # Dataset exploration & sample validation
-│   ├── 02_run_experiments.py    # Execute the full pipeline
-│   └── 03_analysis.py          # Results analysis & figure generation
 ├── results/
-│   ├── figures/                 # Publication-ready figures
-│   ├── raw/                     # Raw inference outputs
-│   └── tables/                  # Aggregated CSV tables
+│   ├── figures/
+│   └── tables/
 ├── scripts/
-│   └── setup_data.sh            # Download data and model weights
+│   ├── prepare_public_release.sh
+│   └── setup_data.sh
 ├── src/
 │   └── vlm_pipeline/
-│       ├── __init__.py
-│       ├── cli.py               # CLI entry point
-│       ├── grounding.py         # Grounding DINO inference
-│       ├── matching.py          # Prediction-GT matching (IoU)
-│       ├── metrics.py           # mAP, IoU, boundary metrics
-│       ├── pipeline.py          # Orchestration: sample → infer → evaluate
-│       ├── prompts.py           # Prompt templates (EN/PT)
-│       ├── sampling.py          # Stratified sampling from COCO
-│       ├── segmentation.py      # SAM 2.1 mask refinement
-│       └── visualization.py    # Figures and tables generation
+│       ├── cli.py
+│       ├── grounding.py
+│       ├── matching.py
+│       ├── metrics.py
+│       ├── pipeline.py
+│       ├── prompts.py
+│       ├── sampling.py
+│       ├── segmentation.py
+│       └── visualization.py
 ├── tests/
+├── dashboard.py
+├── statistical_analysis.py
 ├── requirements.txt
 └── setup.py
 ```
 
-### Models
-
-| Model | Variant | Size |
-|-------|---------|------|
-| Grounding DINO | Swin-B | ~938 MB |
-| SAM 2.1 | Hiera Large | ~2.4 GB |
-
-## Setup
-
-### Prerequisites
+## Environment Requirements
 
 - Python 3.10+
-- NVIDIA GPU with ≥30 GB VRAM (A100 recommended)
-- CUDA 12.1+
+- CUDA-compatible GPU (the manuscript run used NVIDIA T4 16 GB)
+- Linux/macOS shell environment with `curl` and `unzip`
 
-### Installation
+## Installation
 
 ```bash
-cd platform/vlm-pipeline
-
-# Create and activate virtual environment
 python -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Install the package in editable mode
 pip install -e .
 ```
 
-### Download Data and Weights
+## Data and Weights Setup
 
 ```bash
 bash scripts/setup_data.sh
 ```
 
-This script downloads:
+The setup script prepares:
 
-1. COCO val2017 images and annotations into `data/coco/`
-2. Grounding DINO Swin-B weights into `weights/grounding-dino/`
-3. SAM 2.1 Hiera Large weights into `weights/sam2.1/`
+- `data/coco/val2017` and `data/coco/annotations/instances_val2017.json`
+- `weights/groundingdino_swinb_cogcoor.pth`
+- `weights/sam2.1_hiera_large.pt`
+- output folders under `results/`
 
-## Usage
+## CLI Usage
 
-### Generate Sample
+### 1. Generate stratified sample
 
 ```bash
 vlm-pipeline sample --config configs/experiment.yaml
 ```
 
-Generates a stratified sample from COCO val2017 ensuring all 80 categories are represented.
+### 2. Validate existing sample
 
-### Run Experiment
+```bash
+vlm-pipeline sample --config configs/experiment.yaml --validate
+```
+
+### 3. Run full experiment
 
 ```bash
 vlm-pipeline run --config configs/experiment.yaml
 ```
 
-Executes the full pipeline: stratified sampling → prompt generation → Grounding DINO inference → SAM 2.1 refinement → metric computation.
-
-### Generate Visualizations
+### 4. Regenerate figures from tables
 
 ```bash
 vlm-pipeline visualize --tables-dir results/tables --figures-dir results/figures
 ```
 
-Produces publication-ready figures from aggregated result tables.
+## Key Outputs
 
-## Experiments
+Core artifacts produced by the pipeline include:
 
-| ID | Description |
-|----|-------------|
-| **E1** | Overall segmentation quality per class |
-| **E2** | English vs Portuguese comparison |
-| **E3** | Prompt formulation impact (class name, description, contextual) |
-| **E4** | Grounding vs segmentation error diagnosis (conditional metrics) |
-| **E5** | Qualitative failure analysis (visual examples) |
+- Paper summary metrics: `results/tables/stat_paper_summary.csv`
+- Paired inferential tests: `results/tables/stat_wilcoxon_tests.csv`
+- Bootstrap CIs: `results/tables/stat_bootstrap_*.csv`
+- Balanced analysis: `results/tables/stat_instance_balanced_prompt_type.csv`
+- Main figures: `results/figures/e1_*.png` to `results/figures/e5_*.png`
 
-## Pre-experiment Validation
+## Reference Results (from current artifacts)
 
-Before running the full experiment, verify:
+From `results/tables/stat_paper_summary.csv`:
 
-- [ ] COCO val2017 images present in `data/coco/val2017/` (5,000 images)
-- [ ] COCO annotations present in `data/coco/annotations/instances_val2017.json`
-- [ ] Grounding DINO weights present in `weights/grounding-dino/`
-- [ ] SAM 2.1 weights present in `weights/sam2.1/`
-- [ ] GPU available and CUDA version ≥12.1 (`nvidia-smi`)
-- [ ] Stratified sample generated and validated via `notebooks/01_data_exploration.py`
-- [ ] Single-image smoke test passes before full run
+- `simple`: mIoU micro `0.527` (95% CI `[0.515, 0.539]`)
+- `direct`: mIoU micro `0.210`
+- `contextual`: mIoU micro `0.250`
+- `object`: mIoU micro `0.204`
 
-## Estimated Runtime
+This matches the manuscript conclusion that **simple class-name prompts outperform longer formulations** in this pipeline setup.
 
-~3 hours on NVIDIA A100 40GB for 500 images × 80 conditions.
+## Reproducibility Notes
 
-## Publishing as a Standalone Public Repository
+- Keep `seed: 42` in `configs/experiment.yaml` for direct comparability.
+- Keep model thresholds as configured unless running sensitivity analyses.
+- The pipeline supports both natural-distribution and class-balanced reporting via generated statistics tables.
 
-For manuscript submissions, prefer a dedicated public repository for this pipeline
-instead of pointing to local workspace paths.
+## Public Release Workflow
 
-1. Generate a clean publishable bundle:
-
-```bash
-cd platform/vlm-pipeline
-bash scripts/prepare_public_release.sh
-```
-
-2. Publish the generated bundle to a public GitHub repository
-	(recommended name: `vlm-prelabeling-pipeline`).
-
-3. Use the public repository URL (and optional Zenodo DOI) in the paper
-	`Declarations` section.
-
-See `PUBLIC_REPO_PREP.md` for the complete workflow.
+Use `PUBLIC_REPO_PREP.md` for release governance and manuscript declaration linkage.
